@@ -1,7 +1,6 @@
 import MySQLdb
 from flask import Flask, Blueprint, request
 from flask import current_app
-import bcrypt
 
 app = Flask(__name__)
 
