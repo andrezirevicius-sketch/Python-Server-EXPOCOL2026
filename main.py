@@ -1,40 +1,49 @@
-import MySQLdb
-from flask import Flask, Blueprint, request
-from flask import current_app
+from flask import Flask, Blueprint, request, render_template, current_app
+import pymysql as MySQLdb
 
 app = Flask(__name__)
 
-#bancão de dados MySQL, configurado para aplicação
+bp_routes = Blueprint('routes', __name__)
+
+# database connection
 connection = MySQLdb.connect(
     host="localhost",
     user="root",
-    passwd="1236547890", #isso n pode ficar aqui, é pireculoso.
-    db="mydatabase"
+    password="1236547890",
+    database="mydatabase"
 )
 
 app.config['DB_CONN'] = connection
 
-bp_routes = Blueprint('routes', __name__)
 
-def search_user_data(column, data):
-    # segurança básica
-    allowed_columns = ["email", "id", "User_Name", "User_Password"]
-    if column not in allowed_columns:
-        return None
+# -------------------------
+# FUNCTIONS
+# -------------------------
+
+def login_user(email: str, password: str):
+
     connection = current_app.config['DB_CONN']
     cursor = connection.cursor()
-    query = f"SELECT * FROM users WHERE {column} = %s"
-    cursor.execute(query, (data,))
+
+    query = """
+        SELECT * FROM users
+        WHERE email = %s AND User_Password = %s
+    """
+
+    cursor.execute(query,(email, password))
+
     usuario = cursor.fetchone()
+
     cursor.close()
+
     return usuario
 
-def insert_new_user(username, email, password):
+def insert_new_user(username: str, email: str, password: str):
     connection = current_app.config['DB_CONN']
     cursor = connection.cursor()
     query = "INSERT INTO users (User_Name, email, User_Password) VALUES (%s, %s, %s)"
     #usar bcript no futuro
-    
+        
     try:
         cursor.execute(query, (username, email, password))
         connection.commit()
@@ -48,23 +57,27 @@ def insert_new_user(username, email, password):
         
     finally:
         cursor.close()
+# -------------------------
+# ROUTES
+# -------------------------
 
 @bp_routes.route('/loginPage', methods=['GET', 'POST'])
 def LoginPage():
 
     if request.method == "GET":
-        return "Página de login"
-    #pega da web
-    email = request.form.get("email")
-    password = request.form.get("password")
-    #pega do banco de dados
-    Email_usuario = search_user_data("email", email)
-    Password_usuario = search_user_data("User_Password", password)
+        return render_template("expocol.html")
 
-    if Email_usuario and Password_usuario:
-        return "Login OK"
+    elif request.method == "POST":
 
-    return "Erro"
+        email = request.form.get("email")
+        password = request.form.get("password")
+
+        usuario = login_user(email, password)
+
+        if usuario:
+            return render_template("expocol.html")
+
+        return "Erro"
 
 @bp_routes.route('/registerPage', methods=['POST'])
 def RegisterPage():
@@ -77,9 +90,9 @@ def RegisterPage():
     if success:
         return "Cadastro realizado com sucesso!", 201
     else:
-        return "Erro ao realizar cadastro. O e-mail já pode estar em uso.", 400
-
+        return "Erro ao realizar cadastro. O e-mail ou o usuário podem já estar em uso.", 400
 app.register_blueprint(bp_routes)
 
 if __name__ == "__main__":
+    app.run()
     app.run(debug=True)     
