@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>registerPage</title>
+    <link rel="stylesheet" href="/static/expocol.css">
+</head>
+<body>
+    <form action="/registerPage" method="POST">
+        <p>cadastre-se!!</p>
+        <p>nome:<input type="text" name="username" required minlength="3" pattern="[A-Za-zÀ-ÿ\s]+"></p>
+        <p>email:<input type="email" name="email" required minlength="6"></p>
+        <p>senha:<input type="password" name="password" required minlength="6" pattern="\S+.*"></p>
+
+        <button type="submit">Registrar</button> 
+
+    </form>
+</body>
+</html>

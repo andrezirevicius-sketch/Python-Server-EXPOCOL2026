@@ -1,5 +1,14 @@
 from flask import Flask, Blueprint, request, render_template, current_app
 import pymysql as MySQLdb
+import os
+from dotenv import load_dotenv
+
+load_dotenv('passwords.env')
+
+envhost: str = os.getenv('host', '')
+envuser: str = os.getenv('user', '')
+envpassword: str | bytes  = os.getenv('password', '')
+envdatabase: str | bytes = os.getenv('database', '')
 
 app = Flask(__name__)
 
@@ -7,10 +16,10 @@ bp_routes = Blueprint('routes', __name__)
 
 # database connection
 connection = MySQLdb.connect(
-    host="localhost",
-    user="root",
-    password="1236547890",
-    database="mydatabase"
+    host=envhost,
+    user=envuser,
+    password=envpassword,
+    database=envdatabase
 )
 
 app.config['DB_CONN'] = connection
@@ -20,7 +29,7 @@ app.config['DB_CONN'] = connection
 # FUNCTIONS
 # -------------------------
 
-def login_user(email: str, password: str):
+def login_user(email: str | None, password: str | None):
 
     connection = current_app.config['DB_CONN']
     cursor = connection.cursor()
@@ -38,7 +47,7 @@ def login_user(email: str, password: str):
 
     return usuario
 
-def insert_new_user(username: str, email: str, password: str):
+def insert_new_user(username: str | None, email: str | None, password: str | None):
     connection = current_app.config['DB_CONN']
     cursor = connection.cursor()
     query = "INSERT INTO users (User_Name, email, User_Password) VALUES (%s, %s, %s)"
@@ -61,33 +70,36 @@ def insert_new_user(username: str, email: str, password: str):
 # ROUTES
 # -------------------------
 
+@bp_routes.route('/', methods=['GET'])
+def homePage():
+    return render_template('home.html')
 @bp_routes.route('/loginPage', methods=['GET', 'POST'])
-def LoginPage():
+def loginPage():
+    if request.method == 'GET':
+        return render_template('login.html')
+    email = request.form.get("email")
+    password = request.form.get("password")
+    if not email or not password:
+        return "Campos vazios!!"
+    usuario = login_user(email, password)
 
-    if request.method == "GET":
-        return render_template("expocol.html")
+    if usuario:
+        return "Login efetuado", 201
 
-    elif request.method == "POST":
+    return "Erro", 400
 
-        email = request.form.get("email")
-        password = request.form.get("password")
-
-        usuario = login_user(email, password)
-
-        if usuario:
-            return render_template("expocol.html")
-
-        return "Erro"
-
-@bp_routes.route('/registerPage', methods=['POST'])
-def RegisterPage():
+@bp_routes.route('/registerPage', methods=['POST', 'GET'])
+def registerPage():
+    if request.method == 'GET':
+        return render_template('register.html')
     username = request.form.get("username")
     email = request.form.get("email")
     password = request.form.get("password")
+    if not email or not password or not username:
+        return "Campos vazios!!"
+    register_success = insert_new_user(username, email, password)
 
-    success = insert_new_user(username, email, password)
-
-    if success:
+    if register_success:
         return "Cadastro realizado com sucesso!", 201
     else:
         return "Erro ao realizar cadastro. O e-mail ou o usuário podem já estar em uso.", 400
