@@ -1,20 +1,23 @@
-from flask import Flask, Blueprint, request, render_template, current_app
+from flask import Flask, Blueprint, request, render_template, current_app, flash, redirect, url_for, session
 import pymysql as MySQLdb
 import os
 from dotenv import load_dotenv
 
+#Variáveis ambiente
 load_dotenv('passwords.env')
 
+envsecret_key: str = os.getenv('secret_key', 'testkey')
 envhost: str = os.getenv('host', '')
 envuser: str = os.getenv('user', '')
 envpassword: str | bytes  = os.getenv('password', '')
 envdatabase: str | bytes = os.getenv('database', '')
 
 app = Flask(__name__)
+app.secret_key = envsecret_key #requisito para o flash
 
 bp_routes = Blueprint('routes', __name__)
 
-# database connection
+#Conexão com o database
 connection = MySQLdb.connect(
     host=envhost,
     user=envuser,
@@ -75,34 +78,45 @@ def homePage():
     return render_template('home.html')
 @bp_routes.route('/loginPage', methods=['GET', 'POST'])
 def loginPage():
-    if request.method == 'GET':
+    if request.method == 'GET': 
         return render_template('login.html')
+    
     email = request.form.get("email")
     password = request.form.get("password")
+    
     if not email or not password:
-        return "Campos vazios!!"
+        flash("Campos vazios!!", "warning")
+        return render_template('login.html')
+    
     usuario = login_user(email, password)
-
+    
     if usuario:
-        return "Login efetuado", 201
-
-    return "Erro", 400
-
-@bp_routes.route('/registerPage', methods=['POST', 'GET'])
+        flash("Login efetuado com sucesso!", "success")
+        return redirect(url_for('routes.homePage'))
+    
+    flash("Erro: Usuário ou senha incorretos.", "danger")
+    return render_template('login.html')  
+@bp_routes.route('/registerPage', methods=['GET', 'POST'])
 def registerPage():
     if request.method == 'GET':
         return render_template('register.html')
+    
     username = request.form.get("username")
     email = request.form.get("email")
     password = request.form.get("password")
+    
     if not email or not password or not username:
-        return "Campos vazios!!"
+        flash("Campos vazios!!")
+        return render_template('register.html')
     register_success = insert_new_user(username, email, password)
 
     if register_success:
-        return "Cadastro realizado com sucesso!", 201
+        flash("Cadastro realizado com sucesso!")
+        return redirect(url_for('routes.homePage'))
     else:
-        return "Erro ao realizar cadastro. O e-mail ou o usuário podem já estar em uso.", 400
+        flash("Erro ao realizar cadastro. O e-mail ou o usuário podem já estar em uso.", "danger")
+        return render_template('register.html')
+    
 app.register_blueprint(bp_routes)
 
 if __name__ == "__main__":

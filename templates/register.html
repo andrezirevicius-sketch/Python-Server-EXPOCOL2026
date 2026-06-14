@@ -7,6 +7,13 @@
     <link rel="stylesheet" href="/static/expocol.css">
 </head>
 <body>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
     <form action="/registerPage" method="POST">
         <p>cadastre-se!!</p>
         <p>nome:<input type="text" name="username" required minlength="3" pattern="[A-Za-zÀ-ÿ\s]+"></p>
