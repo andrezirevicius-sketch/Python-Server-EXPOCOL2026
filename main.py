@@ -1,4 +1,4 @@
-from flask import Flask, Blueprint, request, render_template, current_app, flash, redirect, url_for, session
+from flask import Flask, Blueprint, request, render_template, current_app, flash, redirect, url_for
 import pymysql as MySQLdb
 import os
 from dotenv import load_dotenv
